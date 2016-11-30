@@ -1,0 +1,3 @@
+Implementation of MC platform based on Litmus-RT linux real-time test bed.
+Implementing Mixed Criticality scheduling as an extension to Autosar framework.
+

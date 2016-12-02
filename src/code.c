@@ -209,18 +209,17 @@ void systick_program(void)
 }
 
 
-/* This is an ISR Type 2 which is attached to the SysTick peripheral IRQ pin
- * The ISR simply calls CounterTick to implement the timing reference
+/*
+ * System tick handler: Used to monitor the timing protection handlers.
  */
 ISR2(systick_handler)
   {
   EE_systick_clr_int_flg();
   static int timer_divisor = 0;
-
-  timer_divisor++;
-  if (timer_divisor == 4000) {
-    timer_divisor = 0;
-    timer_fired++;
+  /**Call the mc protection handler, after verifying that the timer has not
+   * overflown.
+   * **/
+  if(checkpoint == active){
   }
 //  EE_th_notify_next_activation();
 }
@@ -281,10 +280,10 @@ void buttons_program(void)
   rtiSetPeriod(rtiCOMPARE3, 1000000);
   rtiEnableNotification(rtiNOTIFICATION_COMPARE3);
 }
+
 /*
  * User Buttons Interrupts Handler which activates Task2.
  */
-
 ISR2(rtiCompare3Interrupt)
 {
   /* Clear Interrupt Sources */
@@ -304,7 +303,6 @@ if (CheckSwitch1() || CheckSwitch2()){
 	}
   }
 }
-
 
 int main()
 { 

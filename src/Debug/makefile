@@ -11,6 +11,7 @@ EEOPT += __RTD_TMS570__
 #################
 
 ## MCU OPTIONS ## 
+EEOPT += __RTD_CYGWIN__
 EEOPT += __TI__
 EEOPT += __TMS570__
 
@@ -66,5 +67,5 @@ LIBS    +=
 
 
 APP_SRCS += eecfg.c code.c ee_mc_data.c sys_pmu.asm
-TMPDIR=/tmp/ti
+
 include $(EEBASE)/pkg/cfg/rules.mk

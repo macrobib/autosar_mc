@@ -63,8 +63,22 @@ EE_TID EE_th_next[EE_MAX_TASK] = {
 		EE_NIL
 };
 
+EE_TID EE_th_next_hi[EE_MAX_TASK] = {
+		EE_NIL,
+		EE_NIL
+};
+
 /**First stacked task..**/
-EE_TID EE_stkfirst = EE_NIL;
+EE_TID EE_stkfirst[SCHED_TABLE_COUNT] = {
+    EE_NIL,
+    EE_NIL
+};
+
+/**Schedule Table active states**/
+EE_TID EE_sched_table_status[SCHED_TABLE_COUNT] = {
+    EE_NIL,
+    EE_NIL
+};
 
 /**System cieling parameter**/
 EE_TYPEPRIO EE_sys_ceiling = 0x0000U;
@@ -78,7 +92,10 @@ EE_TYPENACT EE_th_rnact[EE_MAX_TASK] = {
 };
 
 /**First task in the ready queue...**/
-EE_TID EE_rq_first = EE_NIL;
+EE_TID EE_rq_first[SCHED_TABLE_COUNT] = {
+    EE_NIL,
+    EE_NIL
+};
 
 /**Support for chained task if allowed..**/
 #ifndef __OO_NO_CHAINTASK__
@@ -91,7 +108,7 @@ EE_TID EE_th_terminate_nextask[EE_MAX_TASK] = {
 
 /******************************************************************************************************************/
 /*						EVENT HANDLING MECHANISMS
-/******************************************************************************************************************/
+******************************************************************************************************************/
 
 /*Thead event already active*/
 EE_TYPE_EVENTMASK EE_th_event_active[EE_MAX_TASK] =

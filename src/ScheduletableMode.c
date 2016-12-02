@@ -2,6 +2,52 @@
 #include "ScheduletableMode.h"
 #include "ee_as_timing_prot.h"
 
+/*Determine the high critical transitiion context*/
+static EE_as_enum_context_to_high check_hi_transition_context(void){
+	EE_as_enum_context_to_high hi_context = EE_MC_HI_STAGE_INVALID;
+	return hi_context;
+}
+
+/*Determine the low critical transition context*/
+static EE_as_enum_context_to_low check_lo_transition_context(void){
+	EE_as_enum_context_to_low lo_context = EE_MC_LO_STAGE_INVALID;
+	return lo_context;
+}
+
+/*Low crit overrun, no frame overrun.*/
+static void handle_stage_1_change(void){
+
+}
+
+/*High crit overrun, no frame width overrun.*/
+static void handle_stage_2_change(void){
+
+}
+/*High crit overrun, frame width overrun. */
+static void handle_stage_3_change(void){
+
+}
+
+/*AMC Scheduling, stabilization enabled.*/
+static void handle_stage_4_change(void){
+
+}
+
+/*AMC Scheduling, stabilization disabled.*/
+static void lower_criticality_amc_stabilize_disable(void){
+
+}
+
+/*AMC Scheduling, stabilization enabled.*/
+static void lower_criticality_amc_stabilize_enable(void){
+
+}
+
+/*OCBP Frame scheduling.*/
+static void lower_criticality_ocbp(void){
+
+}
+
 /**
  * Summary of tasks:
  * 1. Check if the frame being executed is a low criticality frame.
@@ -13,49 +59,33 @@
  * 4.4 If the next frame to run is low criticality frame, switch it to idle run.
  * **/
 void EE_as_mc_raise_criticality(void){
+
+	EE_as_enum_context_to_high context = check_hi_transition_context();
     switch(context){
-        case stage_1:
+        case EE_MC_HI_STAGE_1:
             {
-                handle_stage_1_change(void);
+                handle_stage_1_change();
             }
             break;
-        case stage_2:
+        case EE_MC_HI_STAGE_2:
             {
-                handle_stage_2_change(void);
+                handle_stage_2_change();
             }
             break;
-        case stage_3:
+        case EE_MC_HI_STAGE_3:
             {
-                handle_stage_3_change(void);
+                handle_stage_3_change();
             }
-        case stage_4:
+            break;
+        case EE_MC_HI_STAGE_4:
             {
-                handle_stage_4_change(void);
+                handle_stage_4_change();
             }
         case default:
-            raise_schedule_error();
+            raise_schedule_error(EE_TRANSITION_TO_HI_ERROR);
+            break;
     }
 }
-
-/*Criticality change initiated, frame being low critical.*/
-static void handle_stage_1_change(void){
-
-}
-
-/*Criticality change initiated, frame being high critical*/
-static void handle_stage_2_change(void){
-
-}
-/**/
-static void handle_stage_3_change(void){
-
-}
-
-/***/
-static void handle_stage_4_change(void){
-
-}
-
 
 
 /**Summary of tasks:
@@ -69,20 +99,37 @@ static void handle_stage_4_change(void){
  * **/
 void EE_as_mc_lower_criticality(void){
 
+	EE_as_enum_context_to_low context =  check_lo_transition_context();
+
+	switch(context){
+	case EE_MC_LO_STAGE1:
+		lower_criticality_amc_stabilize_disable();
+		break;
+	case EE_MC_LO_STAGE2:
+		lower_criticality_amc_stabilize_enable();
+		break;
+	case EE_MC_LO_STAGE3:
+		lower_criticality_ocbp();
+		break;
+	case default:
+		raise_schedule_error(EE_TRANISITON_TO_LO_ERROR);
+	}
 }
 
-static void lower_criticality_amc_stabilize_disable(void){
+
+void EE_as_mc_handle_overrun(EE_as_enum_overrun_type overrun){
+
+	switch(overrun){
+	case EE_AS_BUDGET_OVERRUN:
+		break;
+	case EE_AS_TIMEFRAME_OVERRUN:
+		EE_as_mc_raise_criticality();
+		break;
+	case default:
+		raise_schedule_error(EE_TRANSITION_ERROR):
+	}
 
 }
-
-static void lower_criticality_amc_stabilize_enable(void){
-
-}
-
-static void lower_criticality_ocbp(void){
-
-}
-
 
 /*****************************
  * BSW Application definition.
@@ -105,5 +152,10 @@ void SWcApplication3Definition(){
 
 /*Definition of ABS Application*/
 void SWcApplication4Definition(){
+
+}
+
+
+void EE_as_mc_timing_monitor_handler(){
 
 }

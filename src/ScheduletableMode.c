@@ -14,6 +14,13 @@ static EE_as_enum_context_to_low check_lo_transition_context(void){
 	return lo_context;
 }
 
+static void update_schedule_table_RAM(){
+	if(EE_as_active_sched_table == EE_MC_HIGH_CRIT_SUPPORTED){
+		/*Update the schedule table next expiry point*/
+
+	}
+}
+
 /*Low crit overrun, no frame overrun.*/
 static void handle_stage_1_change(void){
 
@@ -34,12 +41,12 @@ static void handle_stage_4_change(void){
 }
 
 /*AMC Scheduling, stabilization disabled.*/
-static void lower_criticality_amc_stabilize_disable(void){
+static void lower_criticality_amc_tolerance_disabled(void){
 
 }
 
 /*AMC Scheduling, stabilization enabled.*/
-static void lower_criticality_amc_stabilize_enable(void){
+static void lower_criticality_amc_tolerance_enabled(void){
 
 }
 
@@ -61,6 +68,19 @@ static void lower_criticality_ocbp(void){
 void EE_as_mc_raise_criticality(void){
 
 	EE_as_enum_context_to_high context = check_hi_transition_context();
+	EE_as_active_trans = EE_AS_TO_HIGH;
+
+	/*If with in tolerance limit, increment the tolerance counter and exit.*/
+	if(EE_mc_tolerance < EE_MC_TOLERANCE_LIMIT){
+		EE_mc_tolerance += 1;
+		return;
+	}
+
+	/*If a repeat transition has been triggered, log it and exit.*/
+	if(EE_as_active_trans == EE_AS_TO_HIGH){
+		raise_schedule_error(EE_TRANSITION_WARNING);
+		return;
+	}
     switch(context){
         case EE_MC_HI_STAGE_1:
             {
@@ -100,13 +120,17 @@ void EE_as_mc_raise_criticality(void){
 void EE_as_mc_lower_criticality(void){
 
 	EE_as_enum_context_to_low context =  check_lo_transition_context();
-
+	if(EE_as_active_trans == EE_AS_TO_LOW){
+		raise_schedule_error(EE_TRANSITION_WARNING);
+		return;
+	}
+	EE_as_active_trans = EE_AS_TO_LOW;
 	switch(context){
 	case EE_MC_LO_STAGE1:
-		lower_criticality_amc_stabilize_disable();
+		lower_criticality_amc_tolerance_disabled();
 		break;
 	case EE_MC_LO_STAGE2:
-		lower_criticality_amc_stabilize_enable();
+		lower_criticality_amc_tolerance_enabled();
 		break;
 	case EE_MC_LO_STAGE3:
 		lower_criticality_ocbp();

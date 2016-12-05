@@ -5,6 +5,7 @@
 #ifndef SCHEDULETABLEMODE_H_
 #define SCHEDULETABLEMODE_H_
 #define EE_MC_VARIABLE short
+#define EE_MC_TOLERANCE_LIMIT 1
 
 typedef enum EE_as_enum_activ_crit_{
     EE_AS_LOW_CRIT,
@@ -26,7 +27,8 @@ typedef enum EE_as_enum_overrun_type_{
 typedef enum EE_as_enum_schedule_error_{
 	EE_TRANSITION_TO_HI_ERROR,
 	EE_TRANISITON_TO_LO_ERROR,
-	EE_TRANSITION_ERROR
+	EE_TRANSITION_ERROR,
+	EE_TRANSITION_WARNING
 }EE_as_enum_schedule_error;
 
 /**Represents the different level to transition to high criticality.
@@ -48,11 +50,17 @@ typedef enum EE_as_enum_context_to_low_{
 	EE_MC_LO_STAGE_INVALID /*Undefined case*/
 }EE_as_enum_context_to_low;
 
+/**ACTIVE Schedule table criticality support**/
+typedef enum EE_as_enum_high_crit_support_{
+	EE_MC_HIGH_CRIT_SUPPORTED,
+	EE_MC_HIGH_CRIT_NOT_SUPPORTED
+};
+
 /*If stabilization is enabled tolerance value indicates the accepted budget overrun.
  * */
-EE_MC_VARIABLE  EE_mc_tolerance = -1;
+EE_MC_VARIABLE  EE_mc_tolerance = 0;
 
-EE_as_enum_activ_crit EE_as_active_crit = EE_AS_INVALID_CRIT;
+EE_as_enum_activ_crit EE_as_active_crit = EE_AS_LOW_CRIT;
 EE_as_enum_transition EE_as_active_trans = EE_AS_TO_INVALID;
 
 

@@ -152,50 +152,66 @@ StatusType EE_oo_Schedule(void)
        ready queue with the ready priority > than the ready priority
        of the running TASK can be executed... */
     if ( EE_th_ready_prio[current] < EE_th_ready_prio[rq] ) {
-      EE_oo_call_PostTaskHook();
-      /* release the internal resource */
-      EE_sys_ceiling &= ~EE_th_dispatch_prio[current];
 
-      /* set the ready priority bit. In that way we prevent preemption
-       * from all the tasks with lower priority than the current task.
-       *
-       * NOTE: Setting the ready priority is legal because if the task
-       * has been scheduled it must be that the system_ceiling <
-       * ready_priority, and so (system_ceiling &ready_priority)=0!!!
-       * after a task has been put in execution, the dispatch priority
-       * is set. no other bits are set when this function is called
-       * (all the resources must be unlocked, and all the task that
-       * preempts the running task must have been finished!.
-       */
-      EE_sys_ceiling |= EE_th_ready_prio[current];
+      /*Check for the active system criticality. If in high crit and the 
+       * task belong to background schedule table, drop it. Else push it temp
+       * runqueue.
+       * */
+      if(EE_as_mc_task_dispatcher(rq)){
+          /*Log as a trace of the single low crit task skipped or
+           * as background task ignored.
+           * TODO: Provide macro to disable enable this feature. i.e. to allow
+           * or disallow the tasks already in runqueue before criticality change
+           * to continue or not.
+           * */
+          EE_as_mc_task_logger(rq);
+      }
+      else{
+          EE_oo_call_PostTaskHook();
+          /* release the internal resource */
+          EE_sys_ceiling &= ~EE_th_dispatch_prio[current];
 
-      /* we have to put the task in the ready status */
-      EE_th_status[current] = READY;
-      /* but not in the ready queue!!! 
-         the task remains into the stacked queue!
-      */
+          /* set the ready priority bit. In that way we prevent preemption
+           * from all the tasks with lower priority than the current task.
+           *
+           * NOTE: Setting the ready priority is legal because if the task
+           * has been scheduled it must be that the system_ceiling <
+           * ready_priority, and so (system_ceiling &ready_priority)=0!!!
+           * after a task has been put in execution, the dispatch priority
+           * is set. no other bits are set when this function is called
+           * (all the resources must be unlocked, and all the task that
+           * preempts the running task must have been finished!.
+           */
+          EE_sys_ceiling |= EE_th_ready_prio[current];
 
-      /* get the new internal resource */
-      EE_sys_ceiling |= EE_th_dispatch_prio[rq];
-      /* put the task in running state */
-      EE_th_status[rq] = RUNNING;
+          /* we have to put the task in the ready status */
+          EE_th_status[current] = READY;
+          /* but not in the ready queue!!! 
+             the task remains into the stacked queue!
+          */
 
-      EE_ORTI_set_th_eq_dispatch_prio(current);
-      EE_ORTI_set_th_eq_dispatch_prio(rq);
+          /* get the new internal resource */
+          EE_sys_ceiling |= EE_th_dispatch_prio[rq];
+          /* put the task in running state */
+          EE_th_status[rq] = RUNNING;
 
-      /* Execute context SWITCH, this method return when we have a switch
-         back on the previous TASK contest. */
-      EE_oo_run_next_task();
+          EE_ORTI_set_th_eq_dispatch_prio(current);
+          EE_ORTI_set_th_eq_dispatch_prio(rq);
 
-      /* release the ready priority bit and... */
-      EE_sys_ceiling &= ~EE_th_ready_prio[current];
-      /* ...get again the internal resource */
-      EE_sys_ceiling |= EE_th_dispatch_prio[current];
+          /* Execute context SWITCH, this method return when we have a switch
+             back on the previous TASK contest. */
+          EE_oo_run_next_task();
 
-      EE_ORTI_set_th_eq_dispatch_prio(current);
+          /* release the ready priority bit and... */
+          EE_sys_ceiling &= ~EE_th_ready_prio[current];
+          /* ...get again the internal resource */
+          EE_sys_ceiling |= EE_th_dispatch_prio[current];
 
-      /* Call PreTaskHook in the first TASK context */
-      EE_oo_call_PreTaskHook();
+          EE_ORTI_set_th_eq_dispatch_prio(current);
+
+          /* Call PreTaskHook in the first TASK context */
+          EE_oo_call_PreTaskHook();
+      }
     }
     ev = E_OK;
   } else {

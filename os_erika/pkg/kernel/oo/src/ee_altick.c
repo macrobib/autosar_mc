@@ -175,7 +175,16 @@ static void EE_oo_handle_action_task(EE_oo_action_ROM_type const * const
       /* Check Interarrival Frame */
       if ( EE_as_tp_handle_interarrival(EE_AS_TP_ID_FROM_TASK(TaskID)) ) {
         /* insert the task in the ready queue */
-        EE_oo_task_in_ready_queue(TaskID);
+        /*MC Change: Insert in ready queue, secondary run queue or ignore
+         * altogether.
+         * */
+        if(EE_th_get_system_criticality() == 0){
+
+            EE_oo_task_in_ready_queue(TaskID);
+        }
+        else{
+            EE_mc_task_in_sec_ready_queue(TaskID);
+        }
       }
       ev = E_OK;
     }

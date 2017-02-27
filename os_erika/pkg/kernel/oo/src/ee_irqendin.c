@@ -163,7 +163,7 @@ void EE_IRQ_end_instance( void )
 
     EE_ORTI_set_th_eq_dispatch_prio(rqfirst);
 
-    /* "Press TP start for the first time" for this new activation or realese
+    /* "Press TP start for the first time" for this new activation or release
         from wait of the TASK */
     EE_as_tp_active_start_on_TASK_stacking(rqfirst);
     /* Set the next running TASK, it doesn't directly RUN it */

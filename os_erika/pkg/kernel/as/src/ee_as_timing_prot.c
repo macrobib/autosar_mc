@@ -132,7 +132,15 @@ static void EE_as_tp_time_frames_reclaim ( void )
 void EE_as_tp_active_start_idle ( void ) {
   TickType const now = EE_hal_swfrt_get_current_time();
   EE_as_tp_active_set(INVALID_TIMING_PROTECTION);
+ 
+  /*idle instance detected. Start transition to lower criticality.
+  *Logger is invoked to update the active task id.
+  * */
+  TaskType tid = EE_as_mc_idle_handler();
+  /*Log the background task invoked in idle period.*/
+  EE_as_mc_task_logger(tid);
 
+ 
   EE_as_tp_update_reclamation_budget(now);
 
   if ( reclamation_time_frame_budget_data_ref->
@@ -141,7 +149,10 @@ void EE_as_tp_active_start_idle ( void ) {
     /* Handle here the Time Frames Reclamation Budget */
     EE_as_tp_time_frames_reclaim();
   }
-
+  /**MC_CHANGE
+   * Handle lowering of criticality if handled for tolerance limit.
+   * 
+   * **/
   /* Just Re-enable Time Frame Reclamation Budget */
   EE_hal_tp_set_expiration(reclamation_time_frame_budget_data_ref->
     remaining_budget);
@@ -196,8 +207,17 @@ static void EE_as_tp_active_handle_budget_expired ( EE_as_tp_budget_type
 {
   switch ( expired ) {
     case  EE_EXECUTION_BUDGET:
-      EE_as_call_protection_error(EE_as_active_app,
-        E_OS_PROTECTION_TIME);
+        {
+            /*MC_CHANGE
+             * Budget overrun timer has been triggered, If the specified
+             * tolerance to the overrun has exceeded, initiate a 
+             * critcality change.*/
+            TaskType tid = EE_as_mc_handle_overrun(EE_AS_BUDGET_OVERRUN);
+            /*Log the mc handler invocation.*/
+            EE_as_mc_task_logger(tid);
+            EE_as_call_protection_error(EE_as_active_app,
+            E_OS_PROTECTION_TIME);
+        }
       break;
     case  EE_RESOURCE_LOCK_BUDGET:
     case  EE_OS_INTERRUPT_LOCK_BUDGET:
@@ -208,11 +228,17 @@ static void EE_as_tp_active_handle_budget_expired ( EE_as_tp_budget_type
 #ifndef EE_NO_RECLAMATION_TIME_FRAMES
     case EE_RECLAMATION_TIME_FRAMES_BUDGET:
       /* Reclaim the already expired Time Frames */
+      /**Schedule frame has exceeded the budget, handle
+       * criticality change across the frames.
+       * **/
+      TaskType tid = EE_as_mc_handle_overrun(EE_AS_TIMEFRAME_OVERRUN);
+      /*Log the mc handler invocation.*/
+      EE_as_mc_task_logger(tid);
       EE_as_tp_time_frames_reclaim();
       break;
 #endif /* !EE_NO_RECLAMATION_TIME_FRAMES */
     default:
-      /* THIS CANNOT NEVER HAPPENS (Signal the biggest error, just in case) */
+      /* THIS CAN NEVER HAPPENS (Signal the biggest error, just in case) */
       EE_as_call_protection_error(EE_as_active_app,
         E_OS_PROTECTION_EXCEPTION);
       break;
@@ -288,6 +314,10 @@ void EE_as_tp_active_set_from_id_with_restart ( TimingProtectionType tp_id )
     tp_ram_ref              = EE_as_tp_active.active_tp_RAM_ref;
     tp_ram_ref->last_update = EE_hal_swfrt_get_current_time();
 
+    /* Frame reclamation check against first expiring */
+    EE_as_tp_RAM_first_expiring_against_reclamation(tp_ram_ref);
+
+    /* Restart the first expiring budget */
     /* Frame reclamation check against first expiring */
     EE_as_tp_RAM_first_expiring_against_reclamation(tp_ram_ref);
 
@@ -387,11 +417,7 @@ void EE_as_tp_active_start_for_ISR2 ( ISRType isr2_id )
       remaining_budget);
   }
 #endif /* !EE_NO_RECLAMATION_TIME_FRAMES */
-}
-
-/** Stop the active timing protection without updates. Used where we are
-    sure that current TP won't be restarted. Instead the Time Frame Reclamation
-    Budget is enabled if needed */
+   /* Budget is enabled if needed */
 void EE_as_tp_active_stop ( void ) {
   EE_hal_tp_stop();
   EE_as_tp_active_set(INVALID_TIMING_PROTECTION);
@@ -482,6 +508,10 @@ void EE_as_tp_active_activate_budget_impl ( EE_as_tp_budget_type budget_type,
   EE_as_tp_ROM_type   const * const tp_rom_ref =
     EE_as_tp_active.active_tp_ROM_ref;
 
+  EE_as_tp_RAM_type * const tp_ram_ref = EE_as_tp_active.active_tp_RAM_ref;
+  EE_as_tp_ROM_type   const * const tp_rom_ref =
+    EE_as_tp_active.active_tp_ROM_ref;
+
   /* Check if the budget to be activated is configured */
   time_budget_index = EE_as_tp_active_get_budget( tp_rom_ref, budget_type,
     ref_object_id );
@@ -523,7 +553,7 @@ void EE_as_tp_active_stop_budget_impl ( EE_as_tp_budget_type budget_type,
 {
   /* Index of stopping budget */
   BudgetType                  time_budget_index;
-
+  EE_STATUS early_expiring_table = EE_NIL;
   /* Get TP {RAM, ROM} references */
   EE_as_tp_RAM_type * const tp_ram_ref = EE_as_tp_active.active_tp_RAM_ref;
   EE_as_tp_ROM_type   const * const tp_rom_ref =
@@ -541,6 +571,14 @@ void EE_as_tp_active_stop_budget_impl ( EE_as_tp_budget_type budget_type,
     /* Check if a new first expiring budget have to be set and evaluate it */
     if ( time_budget_index == tp_ram_ref->first_expiring ) {
       EE_as_tp_active_eval_first_expiring();
+    }
+
+    /**MC_CHANGE: If in high critical mode, check for other active running schedule
+     * tables in background, and set expiration timer if necessary.**/
+    if(EE_as_current_crit == EE_CRIT_HIGH){
+            early_expiring_table = check_and_update_active_expiration();
+            //Retrieve the early expiring budget.
+            //set expiration to the given value.
     }
 
     if ( start_first ) {
@@ -573,10 +611,6 @@ EE_TYPEBOOL EE_as_tp_handle_interarrival ( TimingProtectionType tp_id )
       if( (EE_hal_swfrt_eval_elapsed_time(now, tp_ram_ref->interarrival_frame.
             frame_start) > tp_rom_ref->frame_duration) ||
         (tp_ram_ref->interarrival_frame.active == EE_FALSE) )
-      {
-        /* Save the new frame start time */
-        tp_ram_ref->interarrival_frame.frame_start  = now;
-        /* Active inter-arrival protection */
         tp_ram_ref->interarrival_frame.active       = EE_TRUE;
       } else {
         /* Inter-arrival Error: Call the Protection(Hook) */

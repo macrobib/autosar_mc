@@ -97,6 +97,12 @@ EE_TID EE_rq_first[SCHED_TABLE_COUNT] = {
     EE_NIL
 };
 
+/**First task in the secondary ready queue...**/
+EE_TID EE_rq_sec_first[SCHED_TABLE_COUNT] = {
+    EE_NIL,
+    EE_NIL
+};
+
 /**Support for chained task if allowed..**/
 #ifndef __OO_NO_CHAINTASK__
 /*The next task to be activated after a chain task..*/

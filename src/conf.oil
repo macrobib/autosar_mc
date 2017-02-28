@@ -89,7 +89,7 @@ CPU test_application {
   };
 
   /* this is the OIL part for the task displaying the christmas tree */
-/**
+
   TASK Task1 {
     PRIORITY = 0x01;	
     AUTOSTART = FALSE;
@@ -103,12 +103,12 @@ CPU test_application {
     AUTOSTART = TRUE;
     STACK = SHARED;
   };
-**/
-//  ISR systick_handler {
-//    CATEGORY = 2;
-//    ENTRY = "SYSTICK";
-//    PRIORITY = 1;
-//  };
+
+  ISR systick_handler {
+    CATEGORY = 2;
+    ENTRY = "SYSTICK";
+    PRIORITY = 1;
+  };
 
 //  ISR buttons_handler {
 //    CATEGORY = 2;
@@ -188,12 +188,12 @@ CPU test_application {
    * Task 1 is full preemptive
    */
 
-/**    OS EE { KERNEL_TYPE = FP{
+    OS EE { KERNEL_TYPE = FP{
       NESTED_IRQ = TRUE;
     }; };
   TASK Task1 { SCHEDULE = FULL; };
   TASK Task2 { ACTIVATION = 1; }; 
-**/
+
 
 /* Configuration 6:
 *  Kernel is EDF
@@ -222,80 +222,80 @@ CPU test_application {
     };
 **/
 
-  TASK Task1 {
-    PRIORITY = 1;
-    AUTOSTART = TRUE;
-    STACK = PRIVATE {
-      SYS_SIZE = 512;
-    };
-    ACTIVATION = 1;
-    SCHEDULE = FULL;
-    EVENT = TimerEvent;
-    EVENT = ButtonEvent;
-  };
-
-  TASK Task2 {
-    PRIORITY = 2;
-    AUTOSTART = FALSE;
-    STACK = SHARED;
-    ACTIVATION = 1;
-    SCHEDULE = FULL;
-  };
-
-  EVENT TimerEvent  { MASK = AUTO; };
-  EVENT ButtonEvent  { MASK = AUTO; };
-
-  COUNTER system_timer {
-    MINCYCLE = 1;
-    MAXALLOWEDVALUE = 2147483647;
-    TICKSPERBASE = 1;
-    TYPE = HARDWARE {
-      DEVICE = "STM_SR0";
-      SYSTEM_TIMER = TRUE;
-      PRIORITY = 1;
-    };
-    SECONDSPERTICK = 0.001;
-  };
-
-  SCHEDULETABLE SchedTab1 {
-    COUNTER = system_timer;
-    DURATION = 400;
-    REPEATING = FALSE;
-    AUTOSTART = TRUE {
-      TYPE = ABSOLUTE;
-      START_VALUE = 0;
-    };
-    EXPIRE_POINT = ACTION {
-      EXPIRE_VALUE = 100;
-      ACTION = ACTIVATETASK { TASK = Task2; };
-      ACTION = SETEVENT { TASK = Task1; EVENT = ButtonEvent; };
-      SYNC_ADJUSTMENT = FALSE;
-    };
-    EXPIRE_POINT = ACTION {
-      EXPIRE_VALUE = 300;
-      ACTION = SETEVENT { TASK = Task1; EVENT = TimerEvent; };
-      SYNC_ADJUSTMENT = FALSE;
-    };
-    LOCAL_TO_GLOBAL_TIME_SYNCHRONIZATION = FALSE;
-  };
-
-  SCHEDULETABLE SchedTab2 {
-    COUNTER = system_timer;
-    DURATION = 250;
-    REPEATING = FALSE;
-    AUTOSTART = FALSE;
-    EXPIRE_POINT = ACTION {
-      EXPIRE_VALUE = 50;
-      ACTION = ACTIVATETASK { TASK = Task2; };
-      SYNC_ADJUSTMENT = FALSE;
-    };
-    EXPIRE_POINT = ACTION {
-      EXPIRE_VALUE = 200;
-            ACTION = ACTIVATETASK { TASK = Task2; };
-      SYNC_ADJUSTMENT = FALSE;
-    };
-    LOCAL_TO_GLOBAL_TIME_SYNCHRONIZATION = FALSE;
-  };
+//  TASK Task1 {
+//    PRIORITY = 1;
+//    AUTOSTART = TRUE;
+//    STACK = PRIVATE {
+//      SYS_SIZE = 512;
+//    };
+//    ACTIVATION = 1;
+//    SCHEDULE = FULL;
+//    EVENT = TimerEvent;
+//    EVENT = ButtonEvent;
+//  };
+//
+//  TASK Task2 {
+//    PRIORITY = 2;
+//    AUTOSTART = FALSE;
+//    STACK = SHARED;
+//    ACTIVATION = 1;
+//    SCHEDULE = FULL;
+//  };
+//
+//  EVENT TimerEvent  { MASK = AUTO; };
+//  EVENT ButtonEvent  { MASK = AUTO; };
+//
+//  COUNTER system_timer {
+//    MINCYCLE = 1;
+//    MAXALLOWEDVALUE = 2147483647;
+//    TICKSPERBASE = 1;
+//    TYPE = HARDWARE {
+//      DEVICE = "STM_SR0";
+//      SYSTEM_TIMER = TRUE;
+//      PRIORITY = 1;
+//    };
+//    SECONDSPERTICK = 0.001;
+//  };
+//
+//  SCHEDULETABLE SchedTab1 {
+//    COUNTER = system_timer;
+//    DURATION = 400;
+//    REPEATING = FALSE;
+//    AUTOSTART = TRUE {
+//      TYPE = ABSOLUTE;
+//      START_VALUE = 0;
+//    };
+//    EXPIRE_POINT = ACTION {
+//      EXPIRE_VALUE = 100;
+//      ACTION = ACTIVATETASK { TASK = Task2; };
+//      ACTION = SETEVENT { TASK = Task1; EVENT = ButtonEvent; };
+//      SYNC_ADJUSTMENT = FALSE;
+//    };
+//    EXPIRE_POINT = ACTION {
+//      EXPIRE_VALUE = 300;
+//      ACTION = SETEVENT { TASK = Task1; EVENT = TimerEvent; };
+//      SYNC_ADJUSTMENT = FALSE;
+//    };
+//    LOCAL_TO_GLOBAL_TIME_SYNCHRONIZATION = FALSE;
+//  };
+//
+//  SCHEDULETABLE SchedTab2 {
+//    COUNTER = system_timer;
+//    DURATION = 250;
+//    REPEATING = FALSE;
+//    AUTOSTART = FALSE;
+//    EXPIRE_POINT = ACTION {
+//      EXPIRE_VALUE = 50;
+//      ACTION = ACTIVATETASK { TASK = Task2; };
+//      SYNC_ADJUSTMENT = FALSE;
+//    };
+//    EXPIRE_POINT = ACTION {
+//      EXPIRE_VALUE = 200;
+//            ACTION = ACTIVATETASK { TASK = Task2; };
+//      SYNC_ADJUSTMENT = FALSE;
+//    };
+//    LOCAL_TO_GLOBAL_TIME_SYNCHRONIZATION = FALSE;
+//  };
 };
 
 

@@ -36,6 +36,7 @@ EE_MC_Struct EE_th_sched_params[EE_MAX_TASK];
  * TODO: Need to interface xml based generation of the table.
  * */
 void EE_init_task_table(void){
+
 	int i = 0;
 	int j = 0;
 	for(i=0; i< EE_MAX_TASK; i++){
@@ -54,16 +55,18 @@ void EE_init_task_table(void){
 	}
 }
 
-short EE_th_get_system_criticality(void){
+short EE_mc_get_system_criticality(void){
+
 	return EE_MC_Current_Criticality;
 }
 
-void EE_th_set_system_criticality(short criticality){
+void EE_mc_set_system_criticality(short criticality){
+
 	EE_MC_Current_Criticality = criticality;
 }
 
 /*Task will update the termination bitmap on exit*/
-short EE_th_check_task_termination(EE_TID tid)
+short EE_mc_check_task_termination(EE_TID tid)
 {
 	short ee_status = -1;
 	if((tid >= 0)&&(tid < EE_MAX_TASK))
@@ -73,8 +76,37 @@ short EE_th_check_task_termination(EE_TID tid)
 }
 
 /*Update task termination flag, set to 1 on termination and 0 on run*/
-void EE_th_update_task_termination(EE_TID tid, short status)
+void EE_mc_update_task_termination(EE_TID tid, short status)
 {
 	if((tid >= 0)&&(tid < EE_MAX_TASK))
 		task_termination_status[tid] = status;
 }
+
+/*Update the budget monitoring timer with the new value.*/
+__INLINE__ void __ALWAYS_INLINE__ EE_hal_tp_set_expiration(EE_UREG expiration){
+	rearm_budget_timer(expiration);
+}
+
+/*Inser the task to the secondary run queue.*/
+void EE_mc_task_in_sec_ready_queue(EE_TID tid){
+	EE_TYPEPRIO prio;
+	EE_TID p, q;
+
+	p = EE_NIL;
+	q = EE_rq_sec_first;
+	prio = EE_th_ready_prio[tid];
+	while((q != EE_NIL) && (prio <= EE_th_ready_prio[q])){
+		p = q;
+		q = EE_th_next[q];
+	}
+
+	if(p != EE_NIL){
+		EE_th_next[p] = tid;
+	}
+	else{
+		EE_rq_sec_first = tid;
+	}
+	EE_th_next[tid] = q;
+
+}
+

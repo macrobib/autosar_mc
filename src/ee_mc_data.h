@@ -47,16 +47,16 @@ extern EE_TIME EE_MC_Next_Activation;
 
 /*Scratchpad to do the sorting during criticality change*/
 extern EE_TID EE_th_scratchpad[EE_MAX_TASK];
-
+extern inline void rearm_budget_timer(uint32 budget);
 /*Probe for current system criticality*/
-extern short EE_th_get_system_criticality(void);
+extern short EE_mc_get_system_criticality(void);
 /*Set the system wide criticality value*/
-extern void EE_th_set_system_criticality(short criticality);
+extern void EE_mc_set_system_criticality(short criticality);
 /*Wait for the next immediate activation and call schedule*/
-extern short EE_th_check_task_termination(EE_TID tid);
+extern short EE_mc_check_task_termination(EE_TID tid);
 
 /*Update the termination status*/
-extern void EE_th_update_task_termination(EE_TID tid, short status);
+extern void EE_mc_update_task_termination(EE_TID tid, short status);
 #endif
 
 

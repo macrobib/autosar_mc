@@ -88,6 +88,19 @@ inline void stop_timer(){
 //	sciSend(UART, TSIZE2, &TEXT2[0]);
 }
 
+
+/*Rearm the budget timer.
+ * TODO: verify the halcogen prescalar value to match the baseline value of the budget.
+ * */
+inline void rearm_budget_timer(uint32 budget){
+	/*Reset the timer, update the period to reflect the new budget and start.*/
+	rtiStopCounter(rtiCOUNTER_BLOCK0);
+	while(!rtiResetCounter(rtiCOUNTER_BLOCK0));
+	rtiSetPeriod(budget); /*Re arm the counter with new budget as the period.*/
+	rtiStartCounter(rtiCOUNTER_BLOCK0);
+	rtiEnableNotification(rtiNOTIFICATION_COMPARE0);
+}
+
 /*inline void sciDisplayText(sciBASE_t *sci, uint8 *text,uint32 length)
 {
 	while(length--)
@@ -213,14 +226,14 @@ void systick_program(void)
  * System tick handler: Used to monitor the timing protection handlers.
  */
 ISR2(systick_handler)
-  {
+{
   EE_systick_clr_int_flg();
   static int timer_divisor = 0;
   /**Call the mc protection handler, after verifying that the timer has not
    * overflown.
    * **/
-  if(checkpoint == active){
-  }
+//  if(checkpoint == active){
+//  }
 //  EE_th_notify_next_activation();
 }
 
@@ -252,7 +265,7 @@ TASK(Task1)
 /* Task2: Print the counters on the LCD Display */
 TASK(Task2)
 {
-  EE_th_update_task_termination(Task1, 0);
+  EE_th_update_task_termination(Task2, 0);
   /* count the number of Task2 activations */
   task2_fired++;
   int i = 0;
@@ -263,7 +276,7 @@ TASK(Task2)
    * Note: after the first printf in main(), then only this task uses printf
    * In this way we avoid raceconditions in the usage of stdout.
    */
-  EE_th_update_task_termination(Task1, 1);
+  EE_th_update_task_termination(Task2, 1);
 }
 
 /*DISPLAY_Clear(Black);
@@ -289,7 +302,7 @@ ISR2(rtiCompare3Interrupt)
   /* Clear Interrupt Sources */
   rtiREG1->INTFLAG = 8U;
   /* count the number of button presses */
-  EE_Timer_Tick_Counter++;
+//  EE_Timer_Tick_Counter++;
   button_fired++;
 if (CheckSwitch1() || CheckSwitch2()){
 	if(button_fired == 10){

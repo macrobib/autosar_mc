@@ -14,12 +14,7 @@ static EE_as_enum_context_to_low check_lo_transition_context(void){
 	return lo_context;
 }
 
-static void update_schedule_table_RAM(){
-	if(EE_as_active_sched_table == EE_MC_HIGH_CRIT_SUPPORTED){
-		/*Update the schedule table next expiry point*/
 
-	}
-}
 
 /*Low crit overrun, no frame overrun.*/
 static void handle_stage_1_change(void){
@@ -28,15 +23,6 @@ static void handle_stage_1_change(void){
 
 /*High crit overrun, no frame width overrun.*/
 static void handle_stage_2_change(void){
-
-}
-/*High crit overrun, frame width overrun. */
-static void handle_stage_3_change(void){
-
-}
-
-/*AMC Scheduling, stabilization enabled.*/
-static void handle_stage_4_change(void){
 
 }
 
@@ -68,16 +54,19 @@ static void lower_criticality_ocbp(void){
 void EE_as_mc_raise_criticality(void){
 
 	EE_as_enum_context_to_high context = check_hi_transition_context();
-	EE_as_active_trans = EE_AS_TO_HIGH;
+	EE_as_active_crit = EE_th_get_system_criticality();
 
 	/*If with in tolerance limit, increment the tolerance counter and exit.*/
 	if(EE_mc_tolerance < EE_MC_TOLERANCE_LIMIT){
 		EE_mc_tolerance += 1;
 		return;
 	}
+	else{
+		EE_th_set_system_criticality(EE_AS_HIGH_CRIT);
+	}
 
 	/*If a repeat transition has been triggered, log it and exit.*/
-	if(EE_as_active_trans == EE_AS_TO_HIGH){
+	if(EE_as_active_trans == EE_AS_HIGH_CRIT){
 		raise_schedule_error(EE_TRANSITION_WARNING);
 		return;
 	}
@@ -92,15 +81,6 @@ void EE_as_mc_raise_criticality(void){
                 handle_stage_2_change();
             }
             break;
-        case EE_MC_HI_STAGE_3:
-            {
-                handle_stage_3_change();
-            }
-            break;
-        case EE_MC_HI_STAGE_4:
-            {
-                handle_stage_4_change();
-            }
         case default:
             raise_schedule_error(EE_TRANSITION_TO_HI_ERROR);
             break;
@@ -145,16 +125,48 @@ void EE_as_mc_handle_overrun(EE_as_enum_overrun_type overrun){
 
 	switch(overrun){
 	case EE_AS_BUDGET_OVERRUN:
+		//Check overrun corresponds to high crit task if so handle.
+		EE_as_mc_raise_criticality();
 		break;
 	case EE_AS_TIMEFRAME_OVERRUN:
-		EE_as_mc_raise_criticality();
+		//Schedulability error. Manage dropping of low crit frames.
 		break;
 	case default:
 		raise_schedule_error(EE_TRANSITION_ERROR):
 	}
-
 }
 
+/*In memory task logger to trace based on the required set level.
+ *
+ * */
+void EE_as_mc_task_logger(EE_TID task){
+	/*serialize and log the data.*/
+}
+
+/*Check for the sytem criticality. If in high critical mode, and the task belongs to background table ignore the task. If the
+ * task is of low crit and belong to foreground table move it to secondary runqueue.
+ * */
+int EE_as_mc_task_dispatcher(EE_TID task){
+	int task_status = EE_AS_LOW_CRIT;
+	if(EE_mc_get_system_criticality() > 0){
+		task_status = EE_AS_HIGH_CRIT;
+	}
+	return task_status;
+}
+
+/*Handles the invocation of the background task in the case of an idle instant.
+ * If the state is high criticality then transition back to lower crit.
+ * */
+EE_TID EE_as_mc_idle_handler(){
+	/*Switch to the background task.
+	 * */
+	EE_TID current = 0;
+	if(EE_mc_get_system_criticality() > 0){
+		EE_as_mc_lower_criticality();
+	}
+	current = EE_stk_queryfirst();
+	return current;
+}
 /*****************************
  * BSW Application definition.
  * ***************************/
